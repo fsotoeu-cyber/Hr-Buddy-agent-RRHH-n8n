@@ -146,7 +146,7 @@ CREATE TABLE empleados (
 Data Scientist & Analista BI — Tegucigalpa, Honduras
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-fausto--soto-blue)](https://linkedin.com/in/fausto-soto)
-[![GitHub](https://img.shields.io/badge/GitHub-fsoto21-black)](https://github.com/fsoto21)
+[![GitHub](https://img.shields.io/badge/GitHub-fsotoeu--cyber-black)](https://github.com/fsotoeu-cyber/Hr-Buddy-agent-RRHH-n8n)
 
 ---
 
