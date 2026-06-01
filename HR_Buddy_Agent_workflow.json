@@ -1,0 +1,434 @@
+{
+  "name": "INM_AG_CLASE_3_FLUJO1_v3_SIMPLE",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -496,
+        272
+      ],
+      "id": "e35dfd62-416b-45c6-a08d-13a3e801e02b",
+      "name": "Telegram Trigger",
+      "webhookId": "8f258671-bbc3-440b-946f-86689ab4b8b3",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un clasificador binario. Responde SOLO SI o NO.\n\n¿La pregunta es sobre Recursos Humanos de una empresa, o es un saludo/introducción para comenzar una conversación?\n\nCategorias validas de RR.H.H.:\n- Vacaciones, horarios, nomina, salarios, beneficios, contratos, politicas\n- Empleados, capacitacion, evaluaciones, modalidad de trabajo\n- Saludos: hola, buenos dias, buenas tardes, buenas noches, hey, hi\n\nREGLAS:\n1. Saludos o introducciones -> SI (el usuario quiere iniciar conversacion)\n2. Preguntas RR.H.H. -> SI\n3. Temas generales (deportes, clima, noticias, cocina, tecnologia) -> NO\n\nPregunta: {{ $('Telegram Trigger').first().json.message.text }}\nRespuesta:"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        -272,
+        272
+      ],
+      "id": "5e61c1da-79a3-4049-8901-e01958bfb98d",
+      "name": "Clasificador RRHH"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        544
+      ],
+      "id": "026150c1-e45c-4c6c-bece-7137881beefb",
+      "name": "Cohere Clasificador",
+      "credentials": {
+        "cohereApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "rule-no-hr",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "NO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Fuera de Tema"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "rule-hr",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "SI",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RR.HH."
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        48,
+        256
+      ],
+      "id": "9271d3c4-7988-47b1-8f73-3f9b3053e72d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "🚫 Solo puedo responder preguntas relacionadas con *Recursos Humanos* de ChocolaTech.\n\nPara consultas sobre otros temas, utiliza los canales correspondientes. 😊",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        528
+      ],
+      "id": "a1b36fde-7f63-45ef-ae69-6ccc2818aea1",
+      "name": "Enviar: Fuera de Tema",
+      "webhookId": "eeb25801-ddef-4aaf-a6d8-17cebaff014a",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').first().json.message.text }}",
+        "options": {
+          "systemMessage": "Eres el HR Buddy, asistente virtual de RR. HH. de ChocolaTech. REGLAS:\n\n1. Responde SIEMPRE en español.\n2. SOLO temas de RR.H.H. (ya filtrados por nodos previos).\n3. SEGURIDAD - CADA USUARIO SOLO VE SUS PROPIOS DATOS:\n   a. PRIMERO: Usa la herramienta PostgreSQL para buscar en la tabla empleados WHERE telegram_id = chat.id del usuario actual.\n   b. Si NO encuentras al empleado: responde 'No estas registrado en el sistema de ChocolaTech. Contacta a RR.H.H.'\n   c. Si encuentras al empleado: usa SOLO sus datos personales (saldo_vacaciones, banco_horas, departamento, puesto, fecha_ingreso, modalidad).\n   d. NUNCA muestres datos de otros empleados.\n   e. NUNCA inventes datos personales.\n4. Si el usuario no dice su nombre, no importa. Ya lo sabemos por su telegram_id.\n5. Usa la base de conocimientos (Vector Store) para dudas generales de politicas de RR.H.H."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        432,
+        272
+      ],
+      "id": "6d4e6209-4d56-4c87-9d27-9af09a33d78f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [
+        208,
+        560
+      ],
+      "id": "be5a2632-df8e-4964-b4a4-7b72c3eaf7f5",
+      "name": "Cohere Chat Model",
+      "credentials": {
+        "cohereApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').first().json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        560
+      ],
+      "id": "0bfded1c-44ac-4faf-9c5c-f07235baa18a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Buscar informacion sobre RH, asunto vacaciones, horarios etc.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        560
+      ],
+      "id": "47fd2a18-11fb-495e-bf2c-fa199d0e932b",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "modelName": "embed-multilingual-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "typeVersion": 1,
+      "position": [
+        576,
+        720
+      ],
+      "id": "00da78cd-16ac-4030-b737-90b4e6cf371a",
+      "name": "Embeddings Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "empleados",
+          "mode": "list",
+          "cachedResultName": "empleados"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "telegram_id",
+              "value": "={{ $('Telegram Trigger').first().json.message.chat.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        912,
+        560
+      ],
+      "id": "1afab373-c981-4e36-a352-7317b955d4e3",
+      "name": "Select rows from a table in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        272
+      ],
+      "id": "f0f9ce00-e738-481c-83f7-2ff59c0335a1",
+      "name": "Send a text message",
+      "webhookId": "d3ca223b-2827-414f-801c-0adc78298a2f",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Clasificador RRHH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificador RRHH": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Clasificador": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Clasificador RRHH",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Enviar: Fuera de Tema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Cohere": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}
