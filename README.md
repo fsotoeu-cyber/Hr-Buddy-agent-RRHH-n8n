@@ -142,7 +142,7 @@ CREATE TABLE empleados (
 
 ## Autor
 
-**Fausto Enrique Soto Euraque**
+**Fausto Enrique Euraque**
 Data Scientist & Analista BI — Tegucigalpa, Honduras
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-fausto--soto-blue)](https://linkedin.com/in/fausto-soto)
