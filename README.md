@@ -83,7 +83,7 @@ El agente identifica al empleado y responde con sus datos reales:
 > Bot: "Tienes un saldo de 20 días de vacaciones disponibles. ¿Necesitas más información sobre cómo solicitarlas?"
 
 ### Empleado no registrado
-> Usuario: "Soy Fausto Euraque"
+> Usuario: "Soy Fausto Soto"
 > Bot: "No estás registrado en el sistema de ChocolaTech. Contacta a RR.HH."
 
 ---
@@ -142,7 +142,7 @@ CREATE TABLE empleados (
 
 ## Autor
 
-**Fausto Enrique Soto Euraque**
+**Fausto Enrique Euraque**
 Data Scientist & Analista BI — Tegucigalpa, Honduras
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-fausto--soto-blue)](https://linkedin.com/in/fausto-soto)
