@@ -1,12 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface User {
   id: number;
   name: string;
   email: string;
 }
-
-let cachedUsers: User[] = [];
 
 export function UserDashboard() {
   const [users, setUsers] = useState<User[]>([]);
@@ -16,31 +14,33 @@ export function UserDashboard() {
     fetch("https://api.example.com/users")
       .then((res) => res.json())
       .then((data) => {
-        cachedUsers = data;
         setUsers(data);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  function removeUser(id: number) {
-    const index = users.findIndex((u) => u.id === id);
-    users.splice(index, 1);
-    setUsers(users);
-  }
+  const removeUser = useCallback((id: number) => {
+    setUsers((prev) => prev.filter((user) => user.id !== id));
+  }, []);
 
-  function addUser(name: string, email: string) {
-    users.push({ id: Math.random(), name: name, email: email });
-    setUsers(users);
-  }
+  const addUser = useCallback((name: string, email: string) => {
+    const newUser: User = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim(),
+    };
+    setUsers((prev) => [...prev, newUser]);
+  }, []);
 
- if (loading === 'true') {
+  if (loading) {
     return <div>Cargando...</div>;
   }
 
   return (
     <div>
       {users.map((user) => (
-        <div>
+        <div key={user.id}>
           <span>{user.name}</span>
           <span>{user.email}</span>
           <button onClick={() => removeUser(user.id)}>Eliminar</button>
