@@ -33,7 +33,7 @@ export function UserDashboard() {
     setUsers(users);
   }
 
-  if (loading == true) {
+  if (loading === 'true') {
     return <div>Cargando...</div>;
   }
 
