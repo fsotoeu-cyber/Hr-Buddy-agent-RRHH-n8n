@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
 }
@@ -9,24 +9,31 @@ interface User {
 export function UserDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("https://api.example.com/users")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Error al cargar usuarios");
+        return res.json();
+      })
       .then((data) => {
         setUsers(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
 
-  const removeUser = useCallback((id: number) => {
+  const removeUser = useCallback((id: string) => {
     setUsers((prev) => prev.filter((user) => user.id !== id));
   }, []);
 
   const addUser = useCallback((name: string, email: string) => {
     const newUser: User = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       name: name.trim(),
       email: email.trim(),
     };
@@ -35,6 +42,10 @@ export function UserDashboard() {
 
   if (loading) {
     return <div>Cargando...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
   }
 
   return (
