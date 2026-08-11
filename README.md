@@ -150,4 +150,4 @@ Data Scientist & Analista BI — Tegucigalpa, Honduras
 
 ---
 
-*Proyecto desarrollado durante la Inmersión de Agentes de IA — Alura Latam + Oracle ONE, mayo 2026*
+*Proyecto desarrollado durante la Inmersión de Agentes de IA — Alura Latam + Oracle ONE, mayo 2026.*
